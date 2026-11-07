@@ -10,6 +10,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from wakeforge.config import ConfigError, load_config
+from wakeforge.modelfile import META_KEY, list_versions
 from wakeforge.projects import PROJECTS_DIR, list_projects
 
 
@@ -23,29 +24,38 @@ def resolve_project(name):
     return name
 
 
-def load_model(project):
+def load_model(project, version=None):
     config_path = PROJECTS_DIR / project / "config.toml"
     try:
         cfg = load_config(config_path)
     except ConfigError as exc:
         raise SystemExit(f"The config of project '{project}' is invalid:\n{exc}") from exc
 
-    out = Path(cfg.project.output_dir)
-    model_path, meta_path = out / cfg.export.filename, out / "metadata.json"
-    if not model_path.is_file() or not meta_path.is_file():
+    versions = list_versions(cfg.project.output_dir, cfg.export.filename)
+    if not versions:
         raise SystemExit(
             f"Project '{project}' has no trained model yet.\n"
             f"Train it with:  python scripts/train.py --project {project}"
         )
+    chosen = version if version is not None else max(versions)
+    if chosen not in versions:
+        listed = ", ".join(f"v{v}" for v in sorted(versions))
+        raise SystemExit(f"Version {chosen} not found for project '{project}' (available: {listed}).")
+    model_path = versions[chosen]
 
     try:
         import onnxruntime as ort
     except ImportError as exc:
         raise SystemExit(f"Could not import 'onnxruntime' ({exc}).  pip install onnxruntime") from exc
 
-    meta = json.loads(meta_path.read_text())
     session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
-    return session, meta, model_path
+    raw = session.get_modelmeta().custom_metadata_map.get(META_KEY)
+    if raw is None:
+        raise SystemExit(
+            f"{model_path.name} has no embedded metadata (it was exported before metadata was "
+            "stored inside the model). Train again to create a new version."
+        )
+    return session, json.loads(raw), model_path
 
 
 def import_sounddevice():
@@ -88,17 +98,39 @@ def to_model_audio(buffer, rate, target, window_samples):
     return x[-window_samples:]
 
 
+REARM_RATIO = 0.5
+
+
+class Trigger:
+    def __init__(self, threshold, refractory, rearm_ratio=REARM_RATIO):
+        self.threshold = threshold
+        self.refractory = refractory
+        self.rearm_level = threshold * rearm_ratio
+        self.armed = True
+        self.last = None
+
+    def update(self, score, now):
+        if not self.armed and score < self.rearm_level and now - self.last >= self.refractory:
+            self.armed = True
+        if self.armed and score >= self.threshold:
+            self.armed = False
+            self.last = now
+            return True
+        return False
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Live test of a trained wake word with the microphone.")
     ap.add_argument("-p", "--project", help="project name inside projects/")
+    ap.add_argument("--version", type=int, help="model version to use (default: the latest)")
     ap.add_argument("--threshold", type=float, help="override the threshold saved with the model")
     ap.add_argument("--step", type=float, help="seconds between analyses (default: from the model metadata)")
-    ap.add_argument("--cooldown", type=float, default=1.5, help="minimum seconds between detections")
+    ap.add_argument("--cooldown", type=float, help="minimum seconds between detections (default: the model window)")
     ap.add_argument("--device", help="microphone index or name")
     args = ap.parse_args(argv)
 
     project = resolve_project(args.project)
-    session, meta, model_path = load_model(project)
+    session, meta, model_path = load_model(project, args.version)
     input_name = session.get_inputs()[0].name
     output_name = session.get_outputs()[0].name
 
@@ -107,6 +139,8 @@ def main(argv=None):
     window_seconds = float(meta["window_seconds"])
     threshold = args.threshold if args.threshold is not None else float(meta["threshold"])
     step_seconds = args.step if args.step is not None else float(meta.get("suggested_hop_seconds", 0.1))
+    refractory = args.cooldown if args.cooldown is not None else window_seconds
+    trigger = Trigger(threshold, refractory)
 
     sd = import_sounddevice()
     device = parse_device(args.device)
@@ -129,12 +163,11 @@ def main(argv=None):
     buffer = np.zeros(int(rate * window_seconds), dtype=np.float32)
 
     print(f"Project  : {project}")
-    print(f"Model    : {model_path}")
+    print(f"Model    : {model_path.name} (version {meta.get('version', '?')})")
     print(f"Window   : {window_seconds:.2f} s | step: {step_seconds:.2f} s | threshold: {threshold:.2f}")
     print(f"Microphone at {rate} Hz" + (f" (resampled to {target_rate} Hz)" if rate != target_rate else ""))
     print("\nSay your wake word... Ctrl+C to quit.\n")
 
-    last_detection = 0.0
     try:
         with sd.InputStream(samplerate=rate, channels=1, dtype="float32",
                             blocksize=step_samples, device=device) as stream:
@@ -153,10 +186,8 @@ def main(argv=None):
                 bar = "#" * int(score * 20)
                 print(f"\rScore: {score:.4f} [{bar:<20}]", end="", flush=True)
 
-                now = time.time()
-                if score >= threshold and now - last_detection > args.cooldown:
-                    print("\n\n>>> WAKE WORD DETECTED <<<\n")
-                    last_detection = now
+                if trigger.update(score, time.monotonic()):
+                    print(f"\n\n>>> WAKE WORD DETECTED (score {score:.2f}) <<<\n")
 
     except KeyboardInterrupt:
         print("\n\nMicrophone closed.")

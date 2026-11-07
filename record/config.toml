@@ -1,10 +1,8 @@
 # Ajustes propios del grabador (record/recorder.py).
 # El formato de audio (WAV PCM16 mono 16 kHz) NO se configura aquí:
 # vive en src/wakeforge/audio.py.
-
-[paths]
-# Relativa a la raíz del proyecto (o ruta absoluta).
-output_dir = "my_recordings"
+# La carpeta de destino ya no se configura aquí: es la de cada proyecto
+# (projects/<nombre>/my_recordings), que se elige con --project.
 
 [device]
 # "default", un índice (p. ej. "2") o parte del nombre (p. ej. "USB").

@@ -1,9 +1,3 @@
-"""Frontend log-mel implementado con convoluciones.
-
-Se usa tanto en entrenamiento como DENTRO del ONNX exportado, así el modelo final recibe
-audio crudo y no hay que reimplementar el preprocesado al usarlo. No usa torch.stft, que
-da problemas al exportar (números complejos, padding).
-"""
 from __future__ import annotations
 
 import math
@@ -17,7 +11,6 @@ from .config import FeaturesCfg
 
 
 class LogMelFrontend(nn.Module):
-    """audio (B, samples) en [-1, 1] -> log-mel (B, n_mels, frames)."""
 
     def __init__(self, sample_rate: int, cfg: FeaturesCfg):
         super().__init__()

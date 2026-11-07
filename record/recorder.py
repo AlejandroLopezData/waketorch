@@ -29,19 +29,20 @@ try:
         save_wav,
         to_target_format,
     )
+    from wakeforge.config import ConfigError
+    from wakeforge.config import load_config as load_project_config
+    from wakeforge.projects import PROJECTS_DIR, list_projects, project_path
 except ImportError as exc:
     raise SystemExit(
-        f"Could not import 'wakeforge.audio' ({exc}).\n"
+        f"Could not import 'wakeforge' ({exc}).\n"
         'Install the project from its root with:  pip install -e ".[record]"'
     ) from exc
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = Path(__file__).resolve().parent / "config.toml"
 
 CATEGORIES = ("wake_word", "negatives", "noise")
 
 DEFAULT_CONFIG: dict[str, dict[str, Any]] = {
-    "paths": {"output_dir": "my_recordings"},
     "device": {"input": "default", "output": "default"},
     "wake_word": {"min_seconds": 0.3, "max_seconds": 3.0, "default_takes": 50},
     "negatives": {"min_seconds": 0.3, "max_seconds": 5.0, "default_takes": 50},
@@ -64,11 +65,24 @@ def load_config(path: str | Path | None = None) -> dict[str, dict[str, Any]]:
     return cfg
 
 
-def resolve_output_dir(cfg: dict, override: str | None = None) -> Path:
+def resolve_output_dir(project: str | None, override: str | None = None) -> Path:
     if override:
         return Path(override).expanduser().resolve()
-    p = Path(cfg["paths"]["output_dir"]).expanduser()
-    return p if p.is_absolute() else (PROJECT_ROOT / p)
+    if project is None:
+        raise SystemExit(
+            "No project selected. Use --project NAME or --output-dir PATH.\n"
+            "Create a project with:  python -m wakeforge.projects create NAME"
+        )
+    config_path = project_path(project) / "config.toml"
+    if not config_path.is_file():
+        available = ", ".join(list_projects()) or "none"
+        raise SystemExit(
+            f"Project '{project}' not found in {PROJECTS_DIR} (available: {available})."
+        )
+    try:
+        return Path(load_project_config(config_path).project.recordings_dir)
+    except ConfigError as exc:
+        raise SystemExit(f"The config of project '{project}' is invalid:\n{exc}") from exc
 
 
 def parse_device(value: Any) -> int | str | None:
@@ -382,6 +396,30 @@ def run_session(sd, cfg, category, takes, out_dir, in_dev, out_dev) -> int:
     return 0
 
 
+def ask_project() -> str:
+    names = list_projects()
+    if not names:
+        raise SystemExit(
+            "There are no projects yet. Create one with:  python -m wakeforge.projects create NAME"
+        )
+
+    print("Which project is this for?")
+
+    for i, name in enumerate(names, 1):
+        print(f"  {i}) {name}")
+
+    while True:
+        raw = input(f"Choose 1-{len(names)} or enter the name: ").strip()
+
+        if raw.isdigit() and 1 <= int(raw) <= len(names):
+            return names[int(raw) - 1]
+
+        if raw in names:
+            return raw
+
+        print("Invalid option.")
+
+
 def ask_category() -> str:
     print("What do you want to record?")
 
@@ -429,6 +467,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     p.add_argument(
+        "-p",
+        "--project",
+        help="project name inside projects/ (asked interactively if omitted)",
+    )
+
+    p.add_argument(
         "-c",
         "--category",
         choices=CATEGORIES,
@@ -444,12 +488,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p.add_argument(
         "--config",
-        help=f"path to a config.toml file (default: {CONFIG_PATH})",
+        help=f"path to a recorder config.toml file (default: {CONFIG_PATH})",
     )
 
     p.add_argument(
         "--output-dir",
-        help="output folder (default: the one from config.toml)",
+        help="record into this folder instead of a project's my_recordings",
     )
 
     p.add_argument(
@@ -492,9 +536,14 @@ def main(argv: list[str] | None = None) -> int:
         else cfg["device"]["output"]
     )
 
-    out_dir = resolve_output_dir(cfg, args.output_dir)
-
     try:
+        if args.output_dir:
+            out_dir = resolve_output_dir(None, args.output_dir)
+        else:
+            project = args.project or ask_project()
+            out_dir = resolve_output_dir(project)
+            print(f"Project  : {project}")
+
         category = args.category or ask_category()
         takes = args.takes or ask_takes(
             int(cfg[category].get("default_takes", 50))

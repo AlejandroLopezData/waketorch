@@ -1,0 +1,61 @@
+[project]
+name = "test"
+recordings_dir = "my_recordings"
+output_dir = "outputs"
+
+[audio]
+sample_rate = 16000
+window_seconds = 0.0
+window_margin = 0.4
+window_min = 1.0
+window_max = 3.0
+window_percentile = 90
+trim_silence = true
+trim_top_db = 30.0
+
+[features]
+n_mels = 40
+n_fft = 512
+win_length = 400
+hop_length = 160
+f_min = 20.0
+f_max = 7600.0
+
+[model]
+width = 64
+kernel_size = 9
+dilations = [1, 2, 4, 1, 2, 4]
+dropout = 0.1
+
+[training]
+steps = 2000
+batch_size = 64
+lr = 0.002
+weight_decay = 0.01
+val_fraction = 0.2
+positive_ratio = 0.33
+label_smoothing = 0.01
+ema_decay = 0.99
+eval_every = 100
+max_fpr = 0.005
+min_threshold = 0.5
+grad_clip = 5.0
+negative_stride = 0.5
+seed = 0
+num_workers = 0
+device = "auto"
+
+[augmentation]
+gain_db = 6.0
+noise_prob = 0.8
+snr_min_db = 0.0
+snr_max_db = 20.0
+speed_factors = [0.9, 0.95, 1.0, 1.05, 1.1]
+speed_prob = 0.5
+freq_mask = 6
+time_mask = 15
+
+[export]
+filename = "model.onnx"
+opset = 17
+verify = true

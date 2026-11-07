@@ -1,4 +1,4 @@
-"""Entrenamiento y exportación: my_recordings/ -> outputs/<name>/model.onnx + metadata.json."""
+"""Entrenamiento y exportación: <proyecto>/my_recordings/ -> <proyecto>/outputs/model.onnx + metadata.json."""
 from __future__ import annotations
 
 import copy
@@ -11,12 +11,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, WeightedRandomSampler
 
-from wakeforge.augment import build_specaug
-from wakeforge.config import Config, TrainingCfg
-from wakeforge.data import prepare_data
-from wakeforge.export import export_onnx
-from wakeforge.features import LogMelFrontend
-from wakeforge.model import ExportModel, WakeWordNet
+from .augment import build_specaug
+from .config import Config, TrainingCfg
+from .data import prepare_data
+from .export import export_onnx
+from .features import LogMelFrontend
+from .model import ExportModel, WakeWordNet
 
 
 class EMA:
@@ -65,21 +65,31 @@ def evaluate_split(logits: torch.Tensor, y: torch.Tensor, t: TrainingCfg) -> dic
     }
 
 
+def _thin_history(history: list[dict], max_points: int = 200) -> list[dict]:
+    if len(history) <= max_points:
+        return history
+    keep = {round(i * (len(history) - 1) / (max_points - 1)) for i in range(max_points)}
+    return [h for i, h in enumerate(history) if i in keep]
+
+
 def _device(name: str) -> torch.device:
     if name == "auto":
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
     return torch.device(name)
 
 
-def train(cfg: Config) -> Path:
+def train(cfg: Config, on_progress=None) -> Path:
     t = cfg.training
     random.seed(t.seed)
     torch.manual_seed(t.seed)
     device = _device(t.device)
-    out = Path(cfg.project.output_dir) / cfg.project.name
+    emit = on_progress or (lambda event: None)
+    out = Path(cfg.project.output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
+    emit({"stage": "loading"})
     data = prepare_data(cfg)
+    emit({"stage": "training", "step": 0, "steps": t.steps, "info": data.info})
     train_ds, val_ds = data.train_ds, data.val_ds
 
     # sampler balanceado, con reemplazo: funciona aunque haya muy pocos datos
@@ -106,7 +116,7 @@ def train(cfg: Config) -> Path:
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, t.lr, total_steps=t.steps, pct_start=0.1)
     ls = t.label_smoothing
 
-    best_key, best_metrics, running = (2.0, 1e9), None, []
+    best_key, best_metrics, running, history = (2.0, 1e9), None, [], []
     for step, (wav, y) in enumerate(train_loader, start=1):
         net.train()
         wav, y = wav.to(device), y.to(device)
@@ -124,13 +134,19 @@ def train(cfg: Config) -> Path:
         sched.step()
         ema.update(net)
         running.append(loss.item())
+        emit({"stage": "training", "step": step, "steps": t.steps, "loss": running[-1]})
 
         if step % t.eval_every == 0 or step == t.steps:
             lg, yv = predict(ema.m, frontend, val_loader, device)
             m = evaluate_split(lg, yv, t)
-            print(f"[train] paso {step:5d}/{t.steps} loss {sum(running) / len(running):.4f} | "
+            train_loss = sum(running) / len(running)
+            print(f"[train] paso {step:5d}/{t.steps} loss {train_loss:.4f} | "
                   f"val loss {m['loss']:.4f} FRR {m['frr']:.3f} FPR {m['fpr']:.4f} thr {m['threshold']:.3f}")
             running.clear()
+            record = {"step": step, "train_loss": train_loss, "val_loss": m["loss"],
+                      "frr": m["frr"], "fpr": m["fpr"], "threshold": m["threshold"]}
+            history.append(record)
+            emit({"stage": "eval", "steps": t.steps, **record})
             key = (m["frr"], m["loss"])
             if key < best_key:
                 best_key, best_metrics = key, {**m, "step": step}
@@ -139,6 +155,7 @@ def train(cfg: Config) -> Path:
     # ---- exportación del mejor modelo
     ema.m.load_state_dict(torch.load(out / "checkpoint.pt", map_location="cpu"))
     export_model = ExportModel(frontend.cpu(), ema.m.cpu())
+    emit({"stage": "exporting"})
     onnx_path = out / cfg.export.filename
     diff = export_onnx(export_model, data.window_samples, onnx_path, cfg.export.opset, cfg.export.verify)
 
@@ -157,6 +174,7 @@ def train(cfg: Config) -> Path:
                        "warning": "Pocos ejemplos de validación: tómalo como orientativo."
                        if best_metrics["n_val_pos"] < 20 else None},
         "onnx_max_diff": diff,
+        "history": _thin_history(history),
         "data": data.info,
         "config": cfg.to_dict(),
         "torch_version": torch.__version__,
@@ -164,4 +182,5 @@ def train(cfg: Config) -> Path:
     (out / "metadata.json").write_text(json.dumps(metadata, indent=2, default=str))
     (out / "split.json").write_text(json.dumps(data.split, indent=2))
     print(f"[train] listo -> {onnx_path}")
+    emit({"stage": "done", "path": str(onnx_path)})
     return onnx_path
