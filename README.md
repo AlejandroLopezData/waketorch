@@ -18,7 +18,7 @@ Local · Lightweight
 **Any language. Your voice. Your wake word.**
 
 [Model & Documentation](https://alejandrolopezdata.github.io/waketorch/) | 
-[Usage Tutorial](https:/alejandrolopezdata.github.io/waketorch/)</div>
+[Usage Tutorial](https://alejandrolopezdata.github.io/waketorch/)</div>
 
 
 ## Why WakeTorch?
@@ -78,13 +78,13 @@ waketorch
 ## Hardware
 
 You don't need a powerful computer. Training is the heavy part; once you have the `.onnx` file, any computer can run it on the CPU.
-
+* **NVIDIA GPU:** highly recommended.
+* **Generic GPU:** recommended.
 * **Mac with Apple Silicon:** recommended. Uses the Apple GPU automatically (a 500-step test takes about 36 seconds on an M2).
-* **NVIDIA GPU:** expected to work well.
 * **CPU only:** works, but training is slower.
 
 Not sure about yours? Run the device check (about a minute):
 
 ![Test Computer](static/app_check_computer.png)
 
-It detects your CPU, GPU and RAM, runs a short benchmark, and tells you how many training steps your computer can do in 10 minutes, up to the standard 2000. On slower machines it recommends fewer steps so training stays short.
+It detects your CPU, GPU, and RAM, runs a short benchmark, and recommends the best parameters for your system.
