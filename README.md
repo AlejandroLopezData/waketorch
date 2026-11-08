@@ -33,7 +33,7 @@ Local · Lightweight
 
 ## Installation
 
-**Requirements:** [Python](https://www.python.org/downloads/) 3.10+ (3.12 recommended; on Windows, tick **Add python.exe to PATH** when installing) and a microphone.
+**Requirements:** [Python](https://www.python.org/downloads/) 3.10+ (3.12 recommended; on Windows, tick **Add python.exe to PATH** when installing) and a microphone (if you want to record directly).
 
 ### 1. Download
 
