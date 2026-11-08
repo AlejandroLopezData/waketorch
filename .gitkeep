@@ -1,2 +1,0 @@
-   mkdir -p projects tests/fixtures
-   touch projects/.gitkeep tests/fixtures/.gitkeep
