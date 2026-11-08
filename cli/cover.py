@@ -36,8 +36,9 @@ MASCOT = [
     ("  ▝▀███▀▘    ", ORANGE),
 ]
 TIPS = [
+    "Create a project",
     "Record your wake word",
-    "Add other sounds (negatives)",
+    "Add other sounds (negatives/noise)",
     "Train: it takes a few minutes",
     "Try it live with your mic",
 ]
