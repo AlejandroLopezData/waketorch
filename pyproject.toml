@@ -30,7 +30,7 @@ dev = [
 ]
 
 [project.scripts]
-wakeforge = "cli.main:main"
+waketorch = "cli.main:main"
 
 [build-system]
 requires = ["hatchling"]
