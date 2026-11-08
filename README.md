@@ -87,4 +87,4 @@ Not sure about yours? Run the device check (about a minute):
 
 ![Test Computer](static/app_check_computer.png)
 
-It detects your CPU, GPU, and RAM, runs a short benchmark, and recommends the best parameters for your system.
+* It detects your CPU, GPU, and RAM, runs a short benchmark, and recommends the best parameters for your system.
