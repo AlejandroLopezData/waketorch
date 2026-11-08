@@ -66,10 +66,16 @@ chmod +x install.sh
 ./install.sh
 ```
 
-**Windows**
+**Windows** (Command Prompt)
 
-1. Install Python from [python.org](https://www.python.org/downloads/) and tick **Add python.exe to PATH**.
-2. Unzip the download and double-click **`install.bat`**.
+Install Python from [python.org](https://www.python.org/downloads/) and tick **Add python.exe to PATH**, then:
+
+```bat
+cd %USERPROFILE%\Downloads\waketorch-main
+install.bat
+```
+
+You can also just double-click `install.bat` in the unzipped folder.
 
 ### 3. Run
 
