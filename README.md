@@ -15,11 +15,6 @@ Local · Lightweight
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-C51A4A?style=flat&logo=raspberrypi&logoColor=white) 
 ![License](https://img.shields.io/badge/License-Apache--2.0-green?style=flat) ![Status](https://img.shields.io/badge/Status-Work%20in%20Progress-orange?style=flat)
 
-**WORK IN PROGRESS — This project is still under active development.**
-
-WakeTorch is an early-stage project. Features, functionality, and documentation
-may change as development progresses. Bugs and incomplete features are expected.
-
 **Any language. Your voice. Your wake word.**
 
 [Model & Documentation](https://alejandrolopezdata.github.io/waketorch/)
