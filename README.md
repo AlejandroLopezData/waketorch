@@ -4,8 +4,8 @@
 
 ### Train your own wake word model in minutes — in any language.
 
-Guided CLI · Real voice samples · Fast training · CPU inference · ONNX export  
-Open source · Local · Lightweight
+Guided CLI · Real voice samples · Fast training · ONNX export · Open source
+Local · Lightweight
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) 
 ![ONNX](https://img.shields.io/badge/ONNX-005CED?style=flat&logo=onnx&logoColor=white) 
