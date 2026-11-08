@@ -17,20 +17,18 @@ Local · Lightweight
 
 **Any language. Your voice. Your wake word.**
 
-[Model & Documentation](https://alejandrolopezdata.github.io/waketorch/) | [Example Tutorial](https://alejandrolopezdata.github.io/waketorch/)
-</div>
+[Model & Documentation](https://alejandrolopezdata.github.io/waketorch/) | 
+[Usage Tutorial](https:/alejandrolopezdata.github.io/waketorch/)</div>
 
 
 ## Why WakeTorch?
 
-> **You shouldn't need a huge dataset, a GPU, or a PhD to train a wake word.**
+> **You shouldn't have to rack your brain to train a wake word.**
 
 * **Any language** — train the wake word you actually want, in the language you actually speak.
 * **Minutes, not hours** — the guided CLI takes you from recordings to a working model in minutes.
-* **Your voice, not synthetic TTS** — train on real recordings for a truly personal wake word.
-* **Less data, more signal** — built-in augmentation makes small datasets go further.
-* **One model, everywhere** — export to ONNX and run lightweight inference on CPU.
 * **Yours from start to finish** — local training, local inference, no cloud required.
+* **One model, everywhere** — export to ONNX and run lightweight inference on CPU.
 
 
 ## Installation
