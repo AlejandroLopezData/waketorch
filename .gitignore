@@ -32,3 +32,4 @@ projects/*
 .vscode/
 .idea/
 .DS_Store
+/alex.txt
