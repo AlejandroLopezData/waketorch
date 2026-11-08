@@ -80,7 +80,7 @@ waketorch
 You don't need a powerful computer. Training is the heavy part; once you have the `.onnx` file, any computer can run it on the CPU.
 * **NVIDIA GPU:** highly recommended.
 * **Generic GPU:** recommended.
-* **Mac with Apple Silicon:** recommended. Uses the Apple GPU automatically (a 500-step test takes about 36 seconds on an M2).
+* **Mac with Apple Silicon:** recommended.
 * **CPU only:** works, but training is slower.
 
 Not sure about yours? Run the device check (about a minute):
