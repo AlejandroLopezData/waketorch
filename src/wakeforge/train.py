@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import json
 import random
+import time
 from pathlib import Path
 
 import torch
@@ -40,11 +41,12 @@ class EMA:
 
 
 @torch.no_grad()
-def predict(net, frontend, loader, device):
+def predict(net, frontend, loader, device, front_device=None):
+    front_device = front_device or device
     net.eval()
     logits, ys = [], []
     for w, y in loader:
-        logits.append(net(frontend(w.to(device))).float().cpu())
+        logits.append(net(frontend(w.to(front_device)).to(device)).float().cpu())
         ys.append(y)
     return torch.cat(logits), torch.cat(ys)
 
@@ -74,8 +76,32 @@ def _thin_history(history: list[dict], max_points: int = 200) -> list[dict]:
 
 def _device(name: str) -> torch.device:
     if name == "auto":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.cuda.is_available():
+            return torch.device("cuda")
+        if torch.backends.mps.is_available():
+            return torch.device("mps")
+        return torch.device("cpu")
     return torch.device(name)
+
+
+def _best_cpu_threads(cfg: Config, window_samples: int) -> int:
+    default = torch.get_num_threads()
+    frames = 1 + window_samples // cfg.features.hop_length
+    x = torch.randn(cfg.training.batch_size, cfg.features.n_mels, frames)
+    y = (torch.rand(cfg.training.batch_size) > 0.5).float()
+    probe = WakeWordNet(cfg.features.n_mels, cfg.model)
+
+    def cost(threads: int) -> float:
+        torch.set_num_threads(threads)
+        elapsed = 0.0
+        for _ in range(2):
+            start = time.perf_counter()
+            probe.zero_grad(set_to_none=True)
+            F.binary_cross_entropy_with_logits(probe(x), y).backward()
+            elapsed = time.perf_counter() - start
+        return elapsed
+
+    return min({1, default}, key=cost)
 
 
 def train(cfg: Config, on_progress=None) -> Path:
@@ -83,6 +109,7 @@ def train(cfg: Config, on_progress=None) -> Path:
     random.seed(t.seed)
     torch.manual_seed(t.seed)
     device = _device(t.device)
+    front_device = torch.device("cpu") if device.type == "mps" else device
     emit = on_progress or (lambda event: None)
     out = Path(cfg.project.output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -91,6 +118,10 @@ def train(cfg: Config, on_progress=None) -> Path:
     data = prepare_data(cfg)
     emit({"stage": "training", "step": 0, "steps": t.steps, "info": data.info})
     train_ds, val_ds = data.train_ds, data.val_ds
+    if device.type == "cpu":
+        threads = _best_cpu_threads(cfg, data.window_samples)
+        torch.set_num_threads(threads)
+        print(f"[train] CPU threads: {threads}")
 
     # sampler balanceado, con reemplazo: funciona aunque haya muy pocos datos
     lab = torch.tensor(train_ds.labels)
@@ -104,7 +135,7 @@ def train(cfg: Config, on_progress=None) -> Path:
     train_loader = DataLoader(train_ds, t.batch_size, sampler=sampler, drop_last=True, **kw)
     val_loader = DataLoader(val_ds, 128, shuffle=False, **kw)
 
-    frontend = LogMelFrontend(cfg.audio.sample_rate, cfg.features).to(device).eval()
+    frontend = LogMelFrontend(cfg.audio.sample_rate, cfg.features).to(front_device).eval()
     net = WakeWordNet(cfg.features.n_mels, cfg.model).to(device)
     specaug = build_specaug(cfg.augmentation)
     specaug = specaug.to(device) if specaug is not None else None
@@ -119,9 +150,9 @@ def train(cfg: Config, on_progress=None) -> Path:
     best_key, best_metrics, running, history = (2.0, 1e9), None, [], []
     for step, (wav, y) in enumerate(train_loader, start=1):
         net.train()
-        wav, y = wav.to(device), y.to(device)
+        wav, y = wav.to(front_device), y.to(device)
         with torch.no_grad():
-            x = frontend(wav)
+            x = frontend(wav).to(device)
             if specaug is not None:
                 x = specaug(x)
         with torch.autocast(device_type=device.type, dtype=torch.bfloat16, enabled=device.type == "cuda"):
@@ -137,7 +168,7 @@ def train(cfg: Config, on_progress=None) -> Path:
         emit({"stage": "training", "step": step, "steps": t.steps, "loss": running[-1]})
 
         if step % t.eval_every == 0 or step == t.steps:
-            lg, yv = predict(ema.m, frontend, val_loader, device)
+            lg, yv = predict(ema.m, frontend, val_loader, device, front_device)
             m = evaluate_split(lg, yv, t)
             train_loss = sum(running) / len(running)
             print(f"[train] paso {step:5d}/{t.steps} loss {train_loss:.4f} | "

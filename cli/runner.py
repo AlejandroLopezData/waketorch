@@ -125,3 +125,57 @@ def run_training(project, overrides=()):
     if warnings:
         panel("\n".join(f"• {w}" for w in dict.fromkeys(warnings)), "Things to improve", "yellow")
     return {"version": result["version"], "model": result["model"]}
+
+
+def run_device_check(project=None):
+    """Ejecuta scripts/check_device.py --json mostrando una barra de progreso. Devuelve el resultado o None."""
+    cmd = [sys.executable, str(ROOT / "scripts" / "check_device.py"), "--json"]
+    if project:
+        cmd += ["-p", project]
+    process = subprocess.Popen(cmd, cwd=ROOT, env=child_env(), stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, text=True, bufsize=1,
+                               encoding="utf-8", errors="replace")
+    log, result = [], None
+    columns = [SpinnerColumn("dots", style=FLAME), TextColumn("{task.description}", table_column=Column(no_wrap=True)),
+               BarColumn(bar_width=None, complete_style=FLAME, finished_style=OK, pulse_style=AMBER,
+                         style="#3A3F47"),
+               TaskProgressColumn(style=AMBER)]
+    progress = Progress(*columns, console=console, expand=True)
+    console.print()
+    try:
+        with progress:
+            task = progress.add_task("[muted]Loading PyTorch...[/muted]", total=None)
+            for raw in process.stdout:
+                line = raw.rstrip("\n")
+                event = None
+                if line.startswith(EVENT_PREFIX):
+                    try:
+                        event = json.loads(line[len(EVENT_PREFIX):])
+                    except ValueError:
+                        event = None
+                if event is None:
+                    log.append(line)
+                    continue
+                stage = event.get("stage")
+                if stage == "preparing":
+                    progress.update(task, description="[accent]Preparing[/accent]")
+                elif stage == "measuring":
+                    progress.update(task, total=event["total"], completed=event["index"],
+                                    description=f"[accent]Measuring[/accent]  [muted]{event['label']}[/muted]")
+                elif stage == "result":
+                    result = event
+                    progress.update(task, completed=progress.tasks[0].total or 1, description="[ok]Done[/ok]")
+        process.wait()
+    except KeyboardInterrupt:
+        process.terminate()
+        try:
+            process.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            process.kill()
+        ui.warn("Test cancelled.")
+        return None
+
+    if process.returncode != 0 or result is None:
+        panel("\n".join(log[-15:]) or "(no output)", "The test failed", "red")
+        return None
+    return result

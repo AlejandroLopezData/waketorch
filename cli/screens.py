@@ -5,7 +5,7 @@ from rich.table import Table
 
 from wakeforge.config import ConfigError, load_config
 
-from . import charts, data_tools, examples, runner, ui
+from . import charts, data_tools, device_store, examples, runner, ui
 from .versions import project_config_path, version_infos, version_label
 
 CATEGORY_LABELS = {
@@ -201,13 +201,17 @@ def train_screen(project):
                 table.add_row(*cells)
             ui.panel(table, "Training settings")
 
-        choice = ui.select("Training", [
+        rec = device_store.recommended()
+        recommended_item = []
+        if rec and rec["viable"]:
+            recommended_item = [(f"★   Train with the recommended steps ({rec['steps']}, about {rec['minutes']:.0f} min)", "rec")]
+        choice = ui.select("Training", recommended_item + [
             ("▶   Train now", "full"),
             ("▷   Quick test (500 steps, just to check that everything works)", "quick"),
             ("▶▶  Long training (4000 steps)", "long"),
             ("✔   I edited config.toml, check it", "check"),
             ("←   Back", "back"),
-        ], default="full")
+        ], default="rec" if recommended_item else "full")
         if choice in (None, "back"):
             return
         if choice == "check":
@@ -226,7 +230,8 @@ def train_screen(project):
                 ui.flash("warn", p)
             return
 
-        overrides = {"full": [], "quick": ["training.steps=500"], "long": ["training.steps=4000"]}[choice]
+        overrides = {"full": [], "quick": ["training.steps=500"], "long": ["training.steps=4000"],
+                     "rec": [f"training.steps={rec['steps']}"] if rec else []}[choice]
         ui.screen(project, "Training")
         result = runner.run_training(project, overrides)
         if result is None:
@@ -280,21 +285,24 @@ def usage_screen(project, version=None):
 
 
 def show_code(project, info, kind):
-    """Muestra el ejemplo en pantalla limpia; si no cabe, lo divide en partes."""
+    """Muestra el ejemplo listo para copiar: sin bordes ni números de línea y sin recortar líneas largas.
+
+    Si no cabe en la terminal (la pantalla alternativa no tiene scroll) lo divide en partes.
+    """
     label = examples.EXAMPLES[kind][0]
     lines = examples.example_code(kind, info["path"]).rstrip("\n").split("\n")
-    page = max(8, ui.console.height - 12)
+    page = max(8, ui.console.height - 8)
     pages = [lines[i:i + page] for i in range(0, len(lines), page)]
     for n, chunk in enumerate(pages, 1):
-        ui.screen(project, f"Example · {label}")
-        title = label + (f"  ({n}/{len(pages)})" if len(pages) > 1 else "")
-        ui.console.print(Panel(Syntax("\n".join(chunk), "python", theme="monokai", line_numbers=True,
-                                      start_line=(n - 1) * page + 1, background_color="default"),
-                               title=f"[bold]{title}[/bold]", title_align="left",
-                               border_style=ui.FLAME, box=box.ROUNDED, width=ui.max_width()))
+        ui.screen(project, f"Example · {label}", compact=True)
+        part = f"  [muted]part {n}/{len(pages)}[/muted]" if len(pages) > 1 else ""
+        ui.console.print(f"[bold]{label}[/bold]{part}\n")
+        # soft_wrap: una línea larga no se recorta ni se parte; copiar y pegar da código válido
+        ui.console.print(Syntax("\n".join(chunk), "python", theme="monokai", background_color="default"),
+                         soft_wrap=True)
         last = n == len(pages)
         if last:
-            ui.hint("Copy it into a .py file and run it with python.")
+            ui.hint("\nSelect and copy it into a .py file, then run it with python.")
         ui.pause("Press Enter to go back" if last else "Press Enter for the next part")
 
 
@@ -309,3 +317,115 @@ def test_screen(project):
     if code not in (0, None):
         ui.pause()  # que se pueda leer el error mostrado arriba
         ui.flash("warn", "The test ended with an error")
+
+
+def device_screen(project=None):
+    """Muestra el último test guardado; si no existe (primera vez) lo ejecuta y lo guarda."""
+    stored = device_store.load()
+    if stored is None:
+        stored = _run_and_store(project, first_time=True)
+        if stored is None:
+            return
+    while True:
+        if show_device(project, stored) != "rerun":
+            return
+        new = _run_and_store(project)
+        if new is not None:
+            stored = new
+
+
+def _run_and_store(project, first_time=False):
+    """Ejecuta el test, guarda el resultado y lo devuelve (None si falló o se canceló)."""
+    ui.screen(project, "Check my computer")
+    intro = "Measures how fast this computer can train and recommends how many steps to use.\nIt takes about a minute."
+    if first_time:
+        intro += "\nThe result is saved, so you only need to do this once."
+    if project:
+        intro += f"\nUsing the settings and data of [bold]{project}[/bold] for a more accurate estimate."
+    ui.panel(intro, "Computer check")
+    result = runner.run_device_check(project)
+    if result is None:
+        ui.pause()
+        return None
+    try:
+        return device_store.save(result, project)
+    except OSError as exc:  # no se pudo guardar: aun así se muestran los datos
+        ui.flash("warn", f"Could not save the result ({exc}). It will be measured again next time.")
+        return {"saved_at": None, "project": project, "result": result}
+
+
+def _device_summary(stored):
+    result = stored["result"]
+    sysinfo = result["system"]
+    table = Table(box=None, show_header=False, padding=(0, 2))
+    table.add_column(style="muted", no_wrap=True)
+    table.add_column()
+    ram = f"{sysinfo['ram_gb']:.1f} GB" if sysinfo.get("ram_gb") else "unknown"
+    gpus = ", ".join(sysinfo["gpus"]) if sysinfo["gpus"] else "[muted]none found: it will use the CPU[/muted]"
+    table.add_row("System", sysinfo["os"])
+    table.add_row("CPU", f"{sysinfo['cpu']}  [muted]{sysinfo['cores']}[/muted]")
+    table.add_row("Memory", ram)
+    table.add_row("GPU", gpus)
+    table.add_row("Software", f"Python {sysinfo['python']} · PyTorch {sysinfo['torch']}")
+    table.add_row("Measured", f"{device_store.saved_label(stored)}  [muted]{result.get('source', '')}[/muted]")
+    return table
+
+
+def _device_speeds(result):
+    best_ms = result["best"]["ms"]
+    table = Table(box=None, padding=(0, 2), header_style="muted")
+    table.add_column("configuration", no_wrap=True)
+    table.add_column("ms / step", justify="right")
+    table.add_column("speed", no_wrap=True)
+    for r in result["results"]:
+        if r["ms"] is None:
+            table.add_row(f"[muted]{r['label']}[/muted]", "[bad]failed[/bad]", f"[muted]{r['error'] or ''}[/muted]")
+            continue
+        fastest = r["label"] == result["best"]["label"]
+        level = "green" if fastest else "yellow"
+        mark = "  [ok]◀ fastest[/ok]" if fastest else ""
+        table.add_row(r["label"], f"{r['ms']:.1f}", f"{ui.meter(best_ms / r['ms'], level, 12)}{mark}")
+    return table
+
+
+def _device_estimate(result):
+    rec = result["rec"]
+    lines = [
+        f"[muted]Quick test[/muted]    {rec['quick_steps']:>5} steps   about {rec['quick_minutes']:.1f} min",
+        f"[accent]Recommended[/accent]  {rec['steps']:>5} steps   about {rec['minutes']:.1f} min",
+    ]
+    if rec["steps"] < result["max_steps"]:
+        lines.append(f"[muted]The full {result['max_steps']} steps would take about {rec['max_minutes']:.0f} min[/muted]")
+    lines.append("")
+    if rec["viable"]:
+        lines.append("[ok]✔[/ok] This computer can train the model locally.")
+        lines.append("[muted]In 'Train a model' you will find an option with these steps.[/muted]")
+    else:
+        minimum = result["min_steps"] * rec["seconds_per_step"] / 60
+        lines.append(f"[bad]✘[/bad] Not recommended: even the minimum ({result['min_steps']} steps) takes about {minimum:.0f} min.")
+        lines.append("[muted]Consider training elsewhere (for example Google Colab) and bringing the .onnx file back.[/muted]")
+    if result.get("bf16_slower"):
+        lines.append("[warn]▲[/warn] On this GPU bf16 is slower than fp32, and train.py uses bf16 on CUDA.")
+    return "\n".join(lines)
+
+
+def show_device(project, stored):
+    """Muestra el resultado guardado. Devuelve 'rerun' si el usuario quiere medir otra vez."""
+    result = stored["result"]
+    estimate = _device_estimate(result)
+    verdict = "green" if result["rec"]["viable"] else "red"
+    ui.screen(project, "Check my computer")
+    if ui.console.height >= 36:  # cabe todo en una pantalla
+        ui.panel(_device_summary(stored), "Your computer")
+        ui.panel(_device_speeds(result), "Speed")
+        ui.panel(estimate, "Estimate", verdict)
+    else:  # terminal baja: primero la conclusión, luego los detalles
+        ui.panel(estimate, "Estimate", verdict)
+        ui.pause("Press Enter for the details")
+        ui.screen(project, "Check my computer")
+        ui.panel(_device_summary(stored), "Your computer")
+        ui.panel(_device_speeds(result), "Speed")
+    return ui.select("What do you want to do?", [
+        ("←  Back", "back"),
+        ("↻  Run the test again (about a minute)", "rerun"),
+    ], default="back")

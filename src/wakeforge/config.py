@@ -264,8 +264,8 @@ def validate(cfg: Config, path: str | Path = "config") -> None:
           "model.dilations must contain integers >= 1")
     check(0 <= m.dropout < 1, "model.dropout must be in [0, 1)")
 
-    check(t.steps >= 1 and t.batch_size >= 1 and t.eval_every >= 1,
-          "training: steps, batch_size and eval_every must be >= 1")
+    check(t.steps >= 20, "training.steps must be >= 20 (the learning-rate schedule needs a few steps to warm up)")
+    check(t.batch_size >= 1 and t.eval_every >= 1, "training: batch_size and eval_every must be >= 1")
     check(t.lr > 0 and t.weight_decay >= 0, "training: lr must be > 0 and weight_decay >= 0")
     check(0 < t.val_fraction < 0.5, "training.val_fraction must be between 0 and 0.5")
     check(0 < t.positive_ratio < 1, "training.positive_ratio must be between 0 and 1")
@@ -276,8 +276,8 @@ def validate(cfg: Config, path: str | Path = "config") -> None:
     check(t.grad_clip > 0, "training.grad_clip must be > 0")
     check(0 < t.negative_stride <= 1, "training.negative_stride must be in (0, 1]")
     check(t.num_workers >= 0, "training.num_workers must be >= 0")
-    check(t.device in ("auto", "cpu") or t.device.startswith("cuda"),
-          "training.device must be 'auto', 'cpu' or 'cuda'")
+    check(t.device in ("auto", "cpu", "mps") or t.device.startswith("cuda"),
+          "training.device must be 'auto', 'cpu', 'mps' or 'cuda'")
 
     check(g.gain_db >= 0, "augmentation.gain_db must be >= 0")
     check(0 <= g.noise_prob <= 1 and 0 <= g.speed_prob <= 1,

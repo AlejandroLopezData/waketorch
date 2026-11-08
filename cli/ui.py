@@ -135,10 +135,11 @@ def flush_flash():
     _FLASH.clear()
 
 
-def screen(project=None, section=None, big=False):
+def screen(project=None, section=None, big=False, compact=False):
     """Nueva pantalla: reemplaza la anterior y dibuja el logo.
 
     big=True usa la portada grande si la terminal es lo bastante alta; si no, la cabecera compacta.
+    compact=True usa una cabecera de una sola línea (para pantallas que necesitan todo el espacio).
     """
     from . import cover  # import tardío: cover importa ui
 
@@ -149,7 +150,7 @@ def screen(project=None, section=None, big=False):
     if big and console.width >= 76 and console.height >= 40:
         cover.full(project, section)
     else:
-        cover.header(project, section)
+        cover.header(project, section, one_line=compact)
     if sync:
         sys.stdout.write("\x1b[?2026l")
         sys.stdout.flush()

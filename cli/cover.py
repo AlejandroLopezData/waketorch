@@ -21,15 +21,19 @@ VERSION = "0.1.0"
 GREY = "#B4B8BF"
 
 # Mascota: una antorcha pequeña y sólida (8 columnas)
+ORANGE = "#EE4C2C"
+
+ORANGE = "#EE4C2C"
+
 MASCOT = [
-    ("   ▗▖   ", FLAME),
-    ("  ▗██▖  ", FLAME),
-    (" ▗████▖ ", FLAME),
-    (" ▝████▘ ", FLAME),
-    ("▐██████▌", GREY),
-    (" ▝████▘ ", GREY),
-    ("   ██   ", "#7A7F88"),
-    ("   ▀▀   ", "#7A7F88"),
+    ("        ▗▞▀  ", ORANGE),
+    ("      ▗▞▀  ▄  ", ORANGE),
+    ("    ▗▞▀   ▗██  ", ORANGE),
+    ("  ▗▞▀      ██▌  ", ORANGE),
+    (" ▐▛       ▐██▌  ", ORANGE),
+    (" █▌       ███   ", ORANGE),
+    (" ▝█▄    ▄██▘   ", ORANGE),
+    ("  ▝▀███▀▘    ", ORANGE),
 ]
 TIPS = [
     "Record your wake word",
@@ -124,10 +128,10 @@ def build_cover(version):
 MINI = [(" ▗▖ ", FLAME), ("▐██▌", FLAME), (" ▀▀ ", "#7A7F88")]
 
 
-def header(project=None, section=None):
+def header(project=None, section=None, one_line=False):
     """Cabecera compacta: se redibuja al inicio de cada pantalla."""
     crumbs = [p for p in (project, section) if p]
-    if console.width < 44 or console.height < 20:  # terminal pequeña: una sola línea
+    if one_line or console.width < 44 or console.height < 20:  # una sola línea
         t = Text.assemble(("▲ ", f"bold {FLAME}"), ("WakeTorch", "bold"))
         for part in crumbs:
             t.append(f" › {part}", style=MUTED)

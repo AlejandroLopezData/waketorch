@@ -76,6 +76,7 @@ def choose_project():
         choices.append(("＋  New project", "__new__"))
         if find_legacy_recordings():
             choices.append(("↧  Import my old my_recordings/ folder", "__legacy__"))
+        choices.append(("⚙  Check this computer", "__device__"))
         choices.append(("✕  Quit", "__quit__"))
 
         picked = ui.select("Choose a project", choices, default=names[0] if names else "__new__")
@@ -85,6 +86,9 @@ def choose_project():
             name = ask_new_project()
         elif picked == "__legacy__":
             name = ask_legacy_import()
+        elif picked == "__device__":
+            screens.device_screen()
+            name = None
         else:
             name = picked
         if name:
@@ -126,6 +130,7 @@ def hub(project):
         "results": screens.results_screen,
         "test": screens.test_screen,
         "usage": screens.usage_screen,
+        "device": screens.device_screen,
     }
     while True:
         ui.screen(project, big=True)
@@ -137,6 +142,7 @@ def hub(project):
             ("3  See the results", "results"),
             ("4  Try the model with the microphone", "test"),
             ("5  How to use my model", "usage"),
+            ("6  Check my computer", "device"),
             ("←  Back to projects", "back"),
         ], default=recommended(state))
         if choice in (None, "back"):
