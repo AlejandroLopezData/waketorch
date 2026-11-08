@@ -35,7 +35,7 @@ may change as development progresses. Bugs and incomplete features are expected.
 
 ## Installation
 
-**Requirements:** Python 3.10+ (3.12 recommended) and a microphone.
+**Requirements:** [Python](https://www.python.org/downloads/) 3.10+ (3.12 recommended; on Windows, tick **Add python.exe to PATH** when installing) and a microphone.
 
 ### 1. Download
 
@@ -51,7 +51,6 @@ git clone https://github.com/alejandrolopezdata/waketorch.git
 **macOS**
 
 ```bash
-brew install python@3.12        # skip if you already have Python 3.10+
 cd ~/Downloads/waketorch-main
 chmod +x install.sh
 ./install.sh
@@ -67,8 +66,6 @@ chmod +x install.sh
 ```
 
 **Windows** (Command Prompt)
-
-Install Python from [python.org](https://www.python.org/downloads/) and tick **Add python.exe to PATH**, then:
 
 ```bat
 cd %USERPROFILE%\Downloads\waketorch-main
