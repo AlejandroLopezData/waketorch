@@ -77,8 +77,3 @@ waketorch
 
 `./install.sh uninstall` (macOS / Linux) or `install.bat uninstall` (Windows). Your projects are not touched.
 
-### Troubleshooting
-
-* **Command not found** — open a new terminal window.
-* **Linux** — if the installer asks for it, run `sudo apt install python3-venv libportaudio2` (Debian / Ubuntu).
-* **Don't move the folder after installing** — if you do, run the installer again.
