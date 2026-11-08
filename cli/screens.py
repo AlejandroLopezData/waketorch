@@ -1,11 +1,14 @@
 from rich import box
+from rich.align import Align
+from rich.console import Group
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
+from rich.text import Text
 
 from wakeforge.config import ConfigError, load_config
 
-from . import charts, data_tools, device_store, examples, runner, ui
+from . import charts, data_tools, device_store, examples, picker, runner, ui
 from .versions import project_config_path, version_infos, version_label
 
 CATEGORY_LABELS = {
@@ -150,7 +153,12 @@ def data_screen(project):
             import_flow(project)
 
 
+def _formats():
+    return ", ".join(sorted(ext.lstrip(".") for ext in data_tools.AUDIO_EXTS))
+
+
 def import_flow(project):
+    """Añadir audio: una carpeta (se copia su contenido) o archivos sueltos."""
     ui.screen(project, "Import audio")
     category = ui.select("What are these recordings?", [
         ("My wake word", "wake_word"),
@@ -159,21 +167,85 @@ def import_flow(project):
     ])
     if category is None:
         return
-    source = ui.text("Path to an audio file or a folder (wav, flac, ogg, mp3, m4a):")
-    if not source or not source.strip():
-        return
-    try:
-        result = data_tools.import_audios(source, project, category)
-    except FileNotFoundError as exc:
-        ui.flash("error", str(exc))
-        return
-    ui.flash("ok", f"Added {result['added']} file(s) to {result['destination']}")
-    if result["duplicates"]:
-        ui.flash("warn", f"{result['duplicates']} duplicate(s) skipped.")
-    if result["unreadable"]:
-        ui.flash("warn", "Could not read: " + ", ".join(result["unreadable"][:5]))
-    if result["not_audio"]:
-        ui.flash("warn", f"{result['not_audio']} file(s) were not audio and were skipped.")
+    label = CATEGORY_LABELS[category]
+    paths = _choose_sources(project, label)
+    if paths:
+        _import_all(project, category, paths)
+
+
+def _choose_sources(project, label):
+    """Cómo añadir el audio. Devuelve una lista de rutas, o None si el usuario vuelve atrás."""
+    native = picker.available()
+    while True:
+        if not native:  # sin selector del sistema (p. ej. SSH): directamente arrastrar o pegar
+            return _drop_prompt(project, label)
+        ui.screen(project, f"Import audio · {label}")
+        ui.hint(f"Accepted formats: {_formats()}. You are responsible for the audio you add.\n")
+        method = ui.select(f"How do you want to add audio for “{label}”?", [
+            (f"▤  Choose a folder in {picker.native_name()}", "folder"),
+            (f"▤  Choose files in {picker.native_name()}", "files"),
+            ("⇣  Drag & drop, or paste a path", "drop"),
+            ("←  Back", "back"),
+        ], default="folder")
+        if method in (None, "back"):
+            return None
+        if method == "drop":
+            paths = _drop_prompt(project, label)
+            if paths:
+                return paths
+            continue
+        ui.screen(project, f"Import audio · {label}")
+        ui.panel(Align.center(Text(f"The {picker.native_name()} window is open.\nChoose what to add, or cancel to go back.",
+                                   justify="center")), "Waiting for your selection")
+        try:
+            paths = picker.pick(method, f"Choose audio for {label}")
+        except picker.PickerUnavailable as exc:
+            native = False
+            ui.flash("warn", f"Couldn't open the file picker ({exc}). Drag the files here instead.")
+            continue
+        if paths:
+            return paths
+
+
+def _drop_prompt(project, label):
+    """Arrastrar archivos o una carpeta a la terminal: el sistema pega sus rutas como texto."""
+    ui.screen(project, f"Import audio · {label} · Drag & drop")
+    ui.panel(Align.center(Group(
+        Text("⇣", style=f"bold {ui.FLAME}", justify="center"),
+        Text("Drag your audio files or a folder onto this window,\nthen press Enter.", justify="center"),
+        Text(f"\nAccepted formats: {_formats()}. You are responsible for the audio you add.\n"
+             "You can also paste or type a path. Leave it empty to go back.", style=ui.MUTED, justify="center"),
+    )), "Drag & drop")
+    return picker.parse_dropped(ui.text("Drop here")) or None
+
+
+def _import_all(project, category, paths):
+    """Carpeta -> copia su contenido; archivo -> copia el archivo (lo hace data_tools.import_audios)."""
+    total = {"added": 0, "duplicates": 0, "unreadable": [], "not_audio": 0, "missing": 0, "destination": None}
+    with ui.console.status("[accent]Importing audio…[/accent]", spinner="dots", spinner_style=ui.FLAME):
+        for path in paths:
+            try:
+                result = data_tools.import_audios(path, project, category)
+            except FileNotFoundError:
+                total["missing"] += 1
+                continue
+            total["added"] += result["added"]
+            total["duplicates"] += result["duplicates"]
+            total["not_audio"] += result["not_audio"]
+            total["unreadable"] += result["unreadable"]
+            total["destination"] = result["destination"]
+    if total["added"]:
+        ui.flash("ok", f"Added {total['added']} file(s) to {total['destination']}")
+    else:
+        ui.flash("warn", "Nothing new was added.")
+    if total["duplicates"]:
+        ui.flash("warn", f"{total['duplicates']} duplicate(s) skipped.")
+    if total["unreadable"]:
+        ui.flash("warn", "Could not read: " + ", ".join(total["unreadable"][:5]))
+    if total["not_audio"]:
+        ui.flash("warn", f"{total['not_audio']} file(s) were not audio and were skipped.")
+    if total["missing"]:
+        ui.flash("error", f"{total['missing']} path(s) were not found.")
 
 
 def train_screen(project):

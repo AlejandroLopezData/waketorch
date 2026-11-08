@@ -2,22 +2,25 @@
 __pycache__/
 *.py[cod]
 .venv/
+venv/
+env/
 *.egg-info/
 dist/
 build/
 .pytest_cache/
 .ruff_cache/
 
-# Data and datasets
-data/
-datasets/
-recordings/
-projects/
+# Projects: audio, configs, models and the device-check cache stay local.
+# Only the empty folder is uploaded (through projects/.gitkeep).
+projects/*
+!projects/.gitkeep
 
 # Audio
 *.wav
 *.flac
 *.mp3
+*.ogg
+*.m4a
 
 # Models
 *.onnx
@@ -25,7 +28,7 @@ projects/
 *.pth
 *.tflite
 
-# IDE
+# IDE / OS
 .vscode/
 .idea/
 .DS_Store
