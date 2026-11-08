@@ -77,3 +77,43 @@ waketorch
 
 `./install.sh uninstall` (macOS / Linux) or `install.bat uninstall` (Windows). Your projects are not touched.
 
+## Hardware recommendations
+
+You don't need a powerful computer, but training speed depends a lot on your hardware. Running a trained model is far lighter than training it: once you have the `.onnx` file, any computer can run it on the CPU.
+
+| Computer | Training | Notes |
+|---|---|---|
+| **Mac with Apple Silicon** (M1 or later) | Recommended | Uses the Apple GPU automatically. Measured on an M2: a 500-step test takes about 36 seconds. |
+| **Windows / Linux with an NVIDIA GPU** (4 GB+) | Expected to work well | Uses CUDA automatically. Not measured yet. |
+| **Modern CPU only** (6+ cores) | Works, but slower | Estimated 25-60 minutes for the full training. The check below recommends fewer steps to keep it short. |
+| **Older or low-power CPU** (2 cores, Celeron, Pentium...) | Not recommended | Estimated more than 1.5 hours. Train on another computer and copy the `.onnx` file. |
+| **Intel / AMD integrated graphics, Radeon** | Same as CPU only | PyTorch does not use these GPUs. |
+| **Mac with an Intel processor** | Probably not supported | Recent PyTorch versions are not published for these Macs. |
+
+You also need about 4 GB of RAM (8 GB recommended) and around 5 GB of free disk space, mostly for PyTorch.
+
+> Only the Apple M2 has been measured so far. The other rows are estimates, and we would love to replace them with real numbers: run the check below and share your results.
+
+### Check if your computer can train it
+
+Before training, run the device check. It takes about a minute:
+
+```bash
+python scripts/check_device.py
+```
+
+Run it from the project folder, in the same Python environment where you installed WakeTorch. To measure with your own project's settings and recordings, add `-p YOUR_PROJECT`.
+
+The check:
+
+1. Detects your operating system, CPU, RAM and GPU (NVIDIA or Apple).
+2. Runs a short, real training benchmark on every option it finds (GPU and CPU).
+3. Works out how many training steps fit in 10 minutes, up to the standard 2000, and tells you whether your computer is up to the job.
+
+On a fast computer it recommends the full 2000 steps. On a slower one it recommends fewer, so training finishes in about 10 minutes, and it prints the exact command to use. If even the minimum (300 steps) would take too long, it says so and suggests training on another computer.
+
+The guided CLI will soon offer this recommendation directly while you train.
+
+### Automatic optimization
+
+You don't have to configure anything for it to run well on modest hardware. Training picks the fastest option it finds (NVIDIA GPU, then Apple GPU, then CPU). On CPU it also measures whether using 1 thread or all of them is faster, because on some machines fewer threads are several times faster.
