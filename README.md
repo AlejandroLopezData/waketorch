@@ -14,6 +14,7 @@ Local · Lightweight
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat&logo=linux&logoColor=black) 
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-C51A4A?style=flat&logo=raspberrypi&logoColor=white) 
 ![License](https://img.shields.io/badge/License-Apache--2.0-green?style=flat) ![Status](https://img.shields.io/badge/Status-Work%20in%20Progress-orange?style=flat)
+[![Version](https://img.shields.io/badge/Version-0.1.0-blue?style=flat)]()
 
 **Any language. Your voice. Your wake word.**
 
