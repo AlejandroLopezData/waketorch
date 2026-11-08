@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.py[cod]
 .venv/
@@ -6,16 +7,25 @@ dist/
 build/
 .pytest_cache/
 .ruff_cache/
+
+# Data and datasets
 data/
 datasets/
 recordings/
+projects/
+
+# Audio
 *.wav
 *.flac
 *.mp3
+
+# Models
 *.onnx
 *.pt
 *.pth
 *.tflite
+
+# IDE
 .vscode/
 .idea/
 .DS_Store
