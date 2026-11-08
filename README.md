@@ -48,18 +48,9 @@ git clone https://github.com/alejandrolopezdata/waketorch.git
 
 ### 2. Install
 
-**macOS**
+**macOS / Linux**
 
 ```bash
-cd ~/Downloads/waketorch-main
-chmod +x install.sh
-./install.sh
-```
-
-**Linux** (Debian / Ubuntu)
-
-```bash
-sudo apt install python3 python3-venv python3-pip libportaudio2
 cd ~/Downloads/waketorch-main
 chmod +x install.sh
 ./install.sh
@@ -89,4 +80,5 @@ waketorch
 ### Troubleshooting
 
 * **Command not found** — open a new terminal window.
+* **Linux** — if the installer asks for it, run `sudo apt install python3-venv libportaudio2` (Debian / Ubuntu).
 * **Don't move the folder after installing** — if you do, run the installer again.
