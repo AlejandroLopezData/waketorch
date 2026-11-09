@@ -130,6 +130,7 @@ def hub(project):
         "results": screens.results_screen,
         "test": screens.test_screen,
         "usage": screens.usage_screen,
+        "download": screens.download_screen,
         "device": screens.device_screen,
     }
     while True:
@@ -142,7 +143,8 @@ def hub(project):
             ("3  See the results", "results"),
             ("4  Try the model with the microphone", "test"),
             ("5  How to use my model", "usage"),
-            ("6  Check my computer", "device"),
+            ("6  Download my model (.onnx)", "download"),
+            ("7  Check my computer", "device"),
             ("←  Back to projects", "back"),
         ], default=recommended(state))
         if choice in (None, "back"):

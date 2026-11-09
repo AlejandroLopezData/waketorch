@@ -1,3 +1,8 @@
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
 from rich import box
 from rich.align import Align
 from rich.console import Group
@@ -8,7 +13,7 @@ from rich.text import Text
 
 from wakeforge.config import ConfigError, load_config
 
-from . import charts, data_tools, device_store, examples, picker, runner, ui
+from . import charts, data_tools, device_store, examples, guide, picker, runner, ui
 from .versions import project_config_path, version_infos, version_label
 
 CATEGORY_LABELS = {
@@ -18,11 +23,11 @@ CATEGORY_LABELS = {
 }
 CATEGORY_NOTES = {
     "wake_word": "aim for 30-50 takes",
-    "negatives": "aim for 10+ minutes",
+    "negatives": "aim for 40-50 takes",
     "noise": "a few clips of your room",
 }
 # Meta visual de cada barra de progreso: (campo, objetivo)
-GOALS = {"wake_word": ("files", 40), "negatives": ("minutes", 10), "noise": ("files", 3)}
+GOALS = {"wake_word": ("files", 40), "negatives": ("files", 40), "noise": ("files", 3)}
 TIPS = {
     "wake_word": "Say your wake word naturally. Vary the volume, the distance to the microphone and your tone of voice.",
     "negatives": "Record things that are NOT your wake word: normal speech, TV, music and words that sound similar.",
@@ -133,11 +138,14 @@ def data_screen(project):
             ("●  Record other sounds (negatives)", "rec:negatives"),
             ("●  Record background noise", "rec:noise"),
             ("↧  Import audio files or a folder", "import"),
+            ([("class:guide", "?  Quick recording guide"), ("class:muted", "   read this first")], "guide"),
             ("←  Back", "back"),
         ])
         if action in (None, "back"):
             return
-        if action.startswith("rec:"):
+        if action == "guide":
+            guide.guide_screen(project)
+        elif action.startswith("rec:"):
             category = action.split(":", 1)[1]
             ui.screen(project, f"Record · {CATEGORY_LABELS[category]}")
             ui.panel(TIPS[category], f"Tip · {CATEGORY_LABELS[category]}")
@@ -501,3 +509,68 @@ def show_device(project, stored):
         ("←  Back", "back"),
         ("↻  Run the test again (about a minute)", "rerun"),
     ], default="back")
+
+
+def _downloads_dir():
+    """Carpeta de Descargas del usuario (macOS, Windows y Linux, incluso con el nombre traducido)."""
+    if sys.platform.startswith("linux"):
+        try:
+            out = subprocess.run(["xdg-user-dir", "DOWNLOAD"], capture_output=True, text=True, timeout=3).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            out = ""
+        if out and Path(out) != Path.home():
+            return Path(out)
+    return Path.home() / "Downloads"
+
+
+def _copy_to_downloads(model_path, project):
+    """Copia el .onnx a Descargas sin pisar nada: si el nombre existe, añade (1), (2)..."""
+    folder = _downloads_dir()
+    folder.mkdir(parents=True, exist_ok=True)
+    source = Path(model_path)
+    name = f"{project}_{source.name}"
+    dest = folder / name
+    n = 1
+    while dest.exists():
+        dest = folder / f"{Path(name).stem} ({n}){source.suffix}"
+        n += 1
+    shutil.copy2(source, dest)
+    return dest
+
+
+def download_screen(project):
+    """Elige una versión y abre "Guardar como" para decidir dónde guardar el .onnx.
+
+    Si no hay ventana del sistema disponible, lo copia a la carpeta de Descargas.
+    """
+    ui.screen(project, "Download model")
+    info = pick_version(project, "Which version do you want to download?")
+    if info is None:
+        return
+    source = Path(info["path"])
+    dest = None
+    if picker.available():
+        downloads = _downloads_dir()
+        downloads.mkdir(parents=True, exist_ok=True)
+        ui.screen(project, "Download model")
+        ui.panel(Align.center(Text(f"The {picker.native_name()} window is open.\nChoose where to save the model, or cancel to go back.",
+                                   justify="center")), "Waiting for your selection")
+        try:
+            dest = picker.pick_save(f"{project}_{source.name}", downloads, f"Save model v{info['version']} as")
+        except picker.PickerUnavailable as exc:
+            ui.flash("warn", f"Couldn't open the file manager ({exc}). Saved to your Downloads folder instead.")
+        else:
+            if dest is None:  # cancelado
+                return
+            if not dest.suffix:
+                dest = dest.with_suffix(source.suffix)
+    try:
+        if dest is None:  # sin ventana: carpeta de Descargas
+            dest = _copy_to_downloads(source, project)
+        else:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, dest)
+    except OSError as exc:
+        ui.flash("error", f"Could not copy the model: {exc}")
+        return
+    ui.flash("ok", f"Model v{info['version']} saved as {dest.name} in {dest.parent}")

@@ -10,7 +10,45 @@ $BinDir = Join-Path $env:LOCALAPPDATA "WakeTorch\bin"
 $Shim = Join-Path $BinDir "waketorch.cmd"
 
 function Say($message) { Write-Host "> " -ForegroundColor DarkYellow -NoNewline; Write-Host $message }
-function Fail($message) { Write-Host "X $message" -ForegroundColor Red; exit 1 }
+function Done($message) { Write-Host "OK " -ForegroundColor Green -NoNewline; Write-Host $message }
+function Fail($message) {
+    Write-Progress -Activity "Installing WakeTorch" -Completed
+    Write-Host "X $message" -ForegroundColor Red
+    exit 1
+}
+
+# Runs a command showing a progress bar and the package being installed.
+# The bar moves from $Base% to $Base+$Span% while pip collects packages.
+function Invoke-Step([string]$Label, [int]$Base, [int]$Span, [string]$File, [string[]]$ArgList, [string]$Hint = "") {
+    $out = Join-Path $env:TEMP "waketorch-install.out.log"
+    $err = Join-Path $env:TEMP "waketorch-install.err.log"
+    Remove-Item $out, $err -ErrorAction SilentlyContinue
+    $quoted = @($ArgList | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } })
+    $proc = Start-Process -FilePath $File -ArgumentList $quoted -WorkingDirectory $Root -NoNewWindow -PassThru `
+        -RedirectStandardOutput $out -RedirectStandardError $err
+    $null = $proc.Handle   # keeps the exit code available after the process ends
+    while (-not $proc.HasExited) {
+        $pkg = ""
+        $seen = 0
+        if (Test-Path $out) {
+            $collecting = @(Get-Content $out -ErrorAction SilentlyContinue | Where-Object { $_ -like "Collecting *" })
+            $seen = [Math]::Min($collecting.Count, 30)
+            if ($collecting.Count -gt 0) {
+                $pkg = (($collecting[-1] -split " ")[1]) -replace '[<>=!~;(\[].*$', ''
+            }
+        }
+        $pct = $Base + [int]($Span * $seen / 30)
+        Write-Progress -Activity "Installing WakeTorch" -Status "$Label  $pkg" -PercentComplete $pct
+        Start-Sleep -Milliseconds 200
+    }
+    $proc.WaitForExit()
+    if ($proc.ExitCode -ne 0) {
+        Get-Content $out, $err -ErrorAction SilentlyContinue | Select-Object -Last 15 | ForEach-Object { Write-Host $_ }
+        Fail "$Label failed. $Hint"
+    }
+    Write-Progress -Activity "Installing WakeTorch" -Status $Label -PercentComplete ($Base + $Span)
+    Done $Label
+}
 
 if ($Action -eq "uninstall") {
     if (Test-Path $BinDir) { Remove-Item -Recurse -Force $BinDir }
@@ -34,24 +72,21 @@ foreach ($c in $candidates) {
 if (-not $Python) { Fail "Python 3.10 or newer is required. Install it from https://www.python.org/downloads/ (tick 'Add python.exe to PATH')." }
 $pyExe = $Python[0]
 $pyExtra = @($Python | Select-Object -Skip 1)
-Say ("Using " + (& $pyExe @pyExtra --version))
+Write-Host ""
+Say ("WakeTorch installer (" + (& $pyExe @pyExtra --version) + ")")
+Write-Host ""
 
-# 2) Virtual environment + dependencies (from pyproject.toml)
-Say "Creating the environment (.venv)"
-& $pyExe @pyExtra -m venv .venv
-if ($LASTEXITCODE -ne 0) { Fail "Could not create the environment." }
+# 2) Environment + dependencies (from pyproject.toml)
 $venvPython = Join-Path $Root ".venv\Scripts\python.exe"
-Say "Installing dependencies (PyTorch is large, this can take a few minutes)"
-& $venvPython -m pip install --quiet --upgrade pip
-if ($LASTEXITCODE -ne 0) { Fail "Could not update pip." }
-& $venvPython -m pip install --quiet -e .
-if ($LASTEXITCODE -ne 0) { Fail "Could not install the dependencies." }
+Invoke-Step "Creating the environment" 5 10 $pyExe (@($pyExtra) + @("-m", "venv", ".venv"))
+Invoke-Step "Updating pip" 15 5 $venvPython @("-m", "pip", "install", "--disable-pip-version-check", "--progress-bar", "off", "--upgrade", "pip")
+Say "PyTorch is large: the dependencies can take a few minutes."
+Invoke-Step "Installing dependencies" 20 75 $venvPython @("-m", "pip", "install", "--disable-pip-version-check", "--progress-bar", "off", "-e", ".")
 
 # 3) `waketorch` command (a small launcher in a folder that is added to your PATH)
 New-Item -ItemType Directory -Force $BinDir | Out-Null
 $exePath = Join-Path $Root ".venv\Scripts\waketorch.exe"
 Set-Content -Path $Shim -Encoding Oem -Value "@echo off`r`nset PYTHONUTF8=1`r`n`"$exePath`" %*"
-Say "Command created: $Shim"
 
 # 4) Make sure the launcher folder is in your PATH
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -60,6 +95,8 @@ if ((($userPath -split ";") -notcontains $BinDir)) {
     [Environment]::SetEnvironmentVariable("Path", (($userPath, $BinDir | Where-Object { $_ }) -join ";"), "User")
     $needsRestart = $true
 }
+Write-Progress -Activity "Installing WakeTorch" -Completed
+Done "Creating the waketorch command"
 
 Write-Host ""
 Say "Done. Run it with:  waketorch"

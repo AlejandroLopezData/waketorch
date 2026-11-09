@@ -33,6 +33,7 @@ PROMPT_STYLE = Style([
     ("selected", f"fg:{AMBER}"),
     ("instruction", f"fg:{MUTED}"),
     ("muted", f"fg:{MUTED}"),
+    ("guide", f"fg:{AMBER} bold underline"),
     ("separator", f"fg:{MUTED}"),
 ])
 
@@ -143,7 +144,7 @@ def screen(project=None, section=None, big=False, compact=False):
     """
     from . import cover  # import tardío: cover importa ui
 
-    sync = console.is_terminal
+    sync = console.is_terminal and not console.legacy_windows
     if sync:  # "synchronized output": el terminal pinta el cambio de golpe, sin parpadeo
         sys.stdout.write("\x1b[?2026h")
     console.clear()
