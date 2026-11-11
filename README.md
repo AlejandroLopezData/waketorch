@@ -134,7 +134,9 @@ Not sure which parameters suit your computer? Run the device check and WakeTorch
 When training finishes, you can:
 
 1. **Check the results** and the training curve.
+![results](static/results_page.png)
 2. **Test it with your mic.** Choose *"4. Try the model with the mic"*, then say random words and your wake word to see how it responds.
+![test_mic](static/test_mic.png)
 3. **Export your `.onnx` file.** Choose *"5. How to use my model"* to get a ready-to-use example of how to run it.
 
 That's it: your wake word, your language, running locally.
