@@ -140,8 +140,6 @@ Not sure which parameters suit your computer? Run the device check and WakeTorch
 
 ![train](static/train_page.png)
 
-> **Note:** The example screenshots (training and results) are not a good reference for how many clips you need. They come from a model trained with just **21 wake word samples and 20 negatives**. It still works quite well, but with so few clips the validation set is tiny and the metrics are only a rough guide. For more reliable results, use the recommended **30-50 wake word clips** and a good variety of negatives.
-
 ### 4. Test and export your model
 
 When training finishes, you can:
@@ -149,6 +147,7 @@ When training finishes, you can:
 1. **Check the results** and the training curve.
 
    ![results](static/results_page.png)
+   > **Note:** The example screenshots (training and results) are not a good reference for how many clips you need. They come from a model trained with just **21 wake word samples and 20 negatives**. It still works quite well, but with so few clips the validation set is tiny and the metrics are only a rough guide. For more reliable results, use the recommended **30-50 wake word clips** and a good variety of negatives.
 
 2. **Test it with your mic.** Choose *"4. Try the model with the mic"*, then say random words and your wake word to see how it responds.
 
