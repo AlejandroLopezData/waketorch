@@ -13,7 +13,12 @@ input_name = session.get_inputs()[0].name
 
 sample_rate = info["input"]["sample_rate"]
 window = info["window_samples"]
-threshold = info["threshold"]
+
+threshold = info["threshold"] # Auto = 0.5, you can adjust this value to make the detection more or less sensitive
+#example thresholds:
+#threshold = 0.7 # Less sensitive 
+#threshold = 0.4 # More sensitive
+
 step = int(0.1 * sample_rate)
 
 buffer = np.zeros(window, dtype=np.float32)

@@ -105,6 +105,8 @@ Start by creating a new project. Everything you record, upload, and train will b
 
 Your model learns from three types of audio. You can record them directly from the CLI or upload files you already have.
 
+![rec](static/record_page.png)
+
 #### Wake word
 
 Your target wake word, and nothing else. Record or upload **30–50 clips**, ideally with a bit of variety in tone, speed, and distance from the microphone.

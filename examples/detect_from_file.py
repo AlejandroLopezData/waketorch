@@ -11,9 +11,13 @@ session = ort.InferenceSession(MODEL_PATH, providers=["CPUExecutionProvider"])
 info = json.loads(session.get_modelmeta().custom_metadata_map["wakeforge"])
 input_name = session.get_inputs()[0].name
 
-window = info["window_samples"]
-threshold = info["threshold"]
 sample_rate = info["input"]["sample_rate"]
+window = info["window_samples"]
+
+threshold = info["threshold"] # Auto = 0.5, you can adjust this value to make the detection more or less sensitive
+#example thresholds:
+#threshold = 0.7 # Less sensitive 
+#threshold = 0.4 # More sensitive
 
 audio, rate = sf.read(AUDIO_PATH, dtype="float32")
 if audio.ndim > 1:
