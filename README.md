@@ -140,6 +140,8 @@ Not sure which parameters suit your computer? Run the device check and WakeTorch
 
 ![train](static/train_page.png)
 
+> **Note:** The example screenshots (training and results) are not a good reference for how many clips you need. They come from a model trained with just **21 wake word samples and 20 negatives**. It still works quite well, but with so few clips the validation set is tiny and the metrics are only a rough guide. For more reliable results, use the recommended **30-50 wake word clips** and a good variety of negatives.
+
 ### 4. Test and export your model
 
 When training finishes, you can:
@@ -212,7 +214,6 @@ Contributions are welcome! Whether it's a bug report, a new idea, or a pull requ
 
 * **Found a bug?** [Open an issue](https://github.com/alejandrolopezdata/waketorch/issues/new) and include your OS, Python version, and steps to reproduce it.
 * **Have an idea?** [Open an issue](https://github.com/alejandrolopezdata/waketorch/issues/new) and tell us what you'd like to see.
-* **Want to contribute code?** Read the [contributing guide](CONTRIBUTING.md).
 
 ## License
 
