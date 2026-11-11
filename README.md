@@ -129,6 +129,8 @@ Start the training. **2000 steps** is a good starting point.
 
 Not sure which parameters suit your computer? Run the device check and WakeTorch will recommend the best settings for your hardware.
 
+![train](static/train_page.png)
+
 When training finishes, you can:
 
 1. **Check the results** and the training curve.
