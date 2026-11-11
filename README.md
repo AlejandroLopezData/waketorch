@@ -31,7 +31,7 @@ Local · Lightweight
 * **Yours from start to finish** — local training, local inference, no cloud required.
 * **One model, everywhere** — export to ONNX and run lightweight inference on CPU.
 
-![cli](static/waketorchcli.png)
+![cli](static/waketorchcli2.png)
 
 ## Installation
 
