@@ -21,6 +21,20 @@ Local · Lightweight
 [Model & Documentation](https://alejandrolopezdata.github.io/waketorch/) | 
 [Usage Tutorial](#usage-tutorial)</div>
 
+## Table of Contents
+
+- [Why WakeTorch?](#why-waketorch)
+- [Installation](#installation)
+  - [1. Download](#1-download)
+  - [2. Install](#2-install)
+  - [3. Run](#3-run)
+  - [Uninstall](#uninstall)
+- [Hardware](#hardware)
+- [Usage Tutorial](#usage-tutorial)
+  - [1. Create a project](#1-create-a-project)
+  - [2. Record or upload your audio](#2-record-or-upload-your-audio)
+  - [3. Train your model](#3-train-your-model)
+  - [4. Test and export your model](#4-test-and-export-your-model)
 
 ## Why WakeTorch?
 
@@ -80,6 +94,7 @@ waketorch
 ## Hardware
 
 You don't need a powerful computer. Training is the heavy part; once you have the `.onnx` file, any computer can run it on the CPU.
+
 * **NVIDIA GPU:** highly recommended.
 * **Generic GPU:** recommended.
 * **Mac with Apple Silicon:** recommended.
@@ -131,54 +146,68 @@ Not sure which parameters suit your computer? Run the device check and WakeTorch
 
 ![train](static/train_page.png)
 
+### 4. Test and export your model
+
 When training finishes, you can:
 
 1. **Check the results** and the training curve.
-![results](static/results_page.png)
+
+   ![results](static/results_page.png)
+
 2. **Test it with your mic.** Choose *"4. Try the model with the mic"*, then say random words and your wake word to see how it responds.
-![test_mic](static/test_mic.png)
-3. **Export your `.onnx` file.** Choose *"5. How to use my model"* to get a ready-to-use example of how to run it.
-```python
-import json
-import time
 
-import numpy as np
-import onnxruntime as ort
-import sounddevice as sd
+   ![test_mic](static/test_mic.png)
 
-MODEL_PATH = "model_v1.onnx"
+3. **Export your `.onnx` file.** Choose *"5. How to use my model"* to get a ready-to-use example of how to run it. First, install the dependencies:
 
-session = ort.InferenceSession(MODEL_PATH, providers=["CPUExecutionProvider"])
-info = json.loads(session.get_modelmeta().custom_metadata_map["wakeforge"])
-input_name = session.get_inputs()[0].name
+   ```bash
+   pip install numpy onnxruntime sounddevice
+   ```
 
-sample_rate = info["input"]["sample_rate"]
-window = info["window_samples"]
+   Then run this script to listen to your microphone and detect your wake word:
 
-threshold = info["threshold"]  # Auto = 0.5, you can adjust this value to make the detection more or less sensitive
-# Example thresholds:
-# threshold = 0.7  # Less sensitive
-# threshold = 0.4  # More sensitive
+   ```python
+   import json
+   import time
 
-step = int(0.1 * sample_rate)
+   import numpy as np
+   import onnxruntime as ort
+   import sounddevice as sd
 
-buffer = np.zeros(window, dtype=np.float32)
-ready, last_hit = True, 0.0
+   MODEL_PATH = "model_v1.onnx"
 
-print("Listening... press Ctrl+C to stop.")
-try:
-    with sd.InputStream(samplerate=sample_rate, channels=1, dtype="float32", blocksize=step) as mic:
-        while True:
-            chunk, _ = mic.read(step)
-            buffer = np.concatenate([buffer[step:], chunk[:, 0]])
-            score = float(session.run(None, {input_name: buffer[None, :]})[0][0])
+   session = ort.InferenceSession(MODEL_PATH, providers=["CPUExecutionProvider"])
+   info = json.loads(session.get_modelmeta().custom_metadata_map["wakeforge"])
+   input_name = session.get_inputs()[0].name
 
-            if not ready and score < threshold / 2 and time.time() - last_hit > window / sample_rate:
-                ready = True
-            if ready and score >= threshold:
-                ready, last_hit = False, time.time()
-                print(f"Wake word detected! (score {score:.2f})")
-except KeyboardInterrupt:
-    print("Stopped.")
-```
+   sample_rate = info["input"]["sample_rate"]
+   window = info["window_samples"]
+
+   threshold = info["threshold"]  # Auto = 0.5, you can adjust this value to make the detection more or less sensitive
+   # Example thresholds:
+   # threshold = 0.7  # Less sensitive
+   # threshold = 0.4  # More sensitive
+
+   step = int(0.1 * sample_rate)
+
+   buffer = np.zeros(window, dtype=np.float32)
+   ready, last_hit = True, 0.0
+
+   print("Listening... press Ctrl+C to stop.")
+   try:
+       with sd.InputStream(samplerate=sample_rate, channels=1, dtype="float32", blocksize=step) as mic:
+           while True:
+               chunk, _ = mic.read(step)
+               buffer = np.concatenate([buffer[step:], chunk[:, 0]])
+               score = float(session.run(None, {input_name: buffer[None, :]})[0][0])
+
+               if not ready and score < threshold / 2 and time.time() - last_hit > window / sample_rate:
+                   ready = True
+               if ready and score >= threshold:
+                   ready, last_hit = False, time.time()
+                   print(f"Wake word detected! (score {score:.2f})")
+   except KeyboardInterrupt:
+       print("Stopped.")
+   ```
+
 That's it: your wake word, your language, running locally.
