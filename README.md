@@ -95,11 +95,11 @@ Not sure about yours? Run the device check (about a minute):
 
 Once WakeTorch is installed, run `waketorch` and follow these steps. The whole process takes just a few minutes.
 
-![training tutorial](static/usage_tutorial.png)
-
 ### 1. Create a project
 
-Start by creating a new project. Everything you record, upload, and train will be stored there.
+Start by creating a new project. Everything you record, upload, and train will be stored there. Once it's created, open it to start working on your wake word.
+
+![training tutorial](static/usage_tutorial.png)
 
 ### 2. Record or upload your audio
 
