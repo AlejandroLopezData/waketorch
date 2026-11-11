@@ -25,16 +25,10 @@ Local · Lightweight
 
 - [Why WakeTorch?](#why-waketorch)
 - [Installation](#installation)
-  - [1. Download](#1-download)
-  - [2. Install](#2-install)
-  - [3. Run](#3-run)
-  - [Uninstall](#uninstall)
 - [Hardware](#hardware)
 - [Usage Tutorial](#usage-tutorial)
-  - [1. Create a project](#1-create-a-project)
-  - [2. Record or upload your audio](#2-record-or-upload-your-audio)
-  - [3. Train your model](#3-train-your-model)
-  - [4. Test and export your model](#4-test-and-export-your-model)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Why WakeTorch?
 
@@ -211,3 +205,15 @@ When training finishes, you can:
    ```
 
 That's it: your wake word, your language, running locally.
+
+## Contributing
+
+Contributions are welcome! Whether it's a bug report, a new idea, or a pull request, you're invited to help improve WakeTorch.
+
+* **Found a bug?** [Open an issue](https://github.com/alejandrolopezdata/waketorch/issues/new) and include your OS, Python version, and steps to reproduce it.
+* **Have an idea?** [Open an issue](https://github.com/alejandrolopezdata/waketorch/issues/new) and tell us what you'd like to see.
+* **Want to contribute code?** Read the [contributing guide](CONTRIBUTING.md).
+
+## License
+
+WakeTorch is licensed under the [Apache License 2.0](LICENSE).
