@@ -27,9 +27,9 @@ Local · Lightweight
 - [Installation](#installation)
 - [Hardware](#hardware)
 - [Usage Tutorial](#usage-tutorial)
+- [Model size  & performance](#model-size--performance)
 - [Contributing](#contributing)
 - [License](#license)
-- [Model size  & performance](#model-size--performance)
 
 ## Why WakeTorch?
 
@@ -225,7 +225,7 @@ WakeTorch models are tiny. A trained model is a single `.onnx` file of about **1
 * **Light on disk:** 1.3 MB is easy to ship inside any app or device.
 * **Light on the CPU:** the model checks the audio 10 times per second. Each check takes about 2 ms, and a real listening loop uses roughly 7.5% of a single core, so it never needs a GPU.
 * **Light on memory:** most of the ~58 MB is Python and ONNX Runtime. The model itself adds about 13 MB.
-* **Room to spare:** in our estimate, it keeps up in real time on a CPU core up to ~13x slower than the one we tested, so it should fit on small devices.
+* **Room to spare:** it uses ~7.5% of one CPU core, so even a core several times slower should handle it.
 
 *Measured with [`tests/onnx_test.py`](tests/onnx_test.py) on an Apple M2, 1 thread, onnxruntime 1.31.1. The estimate for slower devices assumes time scales with core speed. Results on your hardware will vary, so run the script to check.*
 
