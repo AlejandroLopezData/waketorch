@@ -35,7 +35,7 @@ Local · Lightweight
 
 > **You shouldn't have to rack your brain to train a wake word.**
 
-Tired of notebooks, English-only voices and cloud accounts? Record your voice, press train, get a small ONNX model that runs on CPU.
+WakeTorch is a complete training and testing interface in your terminal: record or upload your voice, train, check the results, **try your model live with your microphone**, and export a small ONNX model with a ready-to-run code example. All in one place, running on your own computer.
 
 | The usual problem | openWakeWord / microWakeWord | Picovoice Porcupine | **WakeTorch** |
 |---|---|---|---|
