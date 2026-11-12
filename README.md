@@ -161,59 +161,9 @@ When training finishes, you can:
 
    ![test_mic](static/test_mic.png)
 
-3. **Export your `.onnx` file.** Choose *"5. How to use my model"* to get a ready-to-use example of how to run it. First, install the dependencies:
+3. **Export your .onnx file.** Select *5. How to use my model* to get a ready-to-use code example. You can also copy the appropriate example from examples/detect_from_mic or examples/detect_from_file, depending on whether you want to detect your wake word through a microphone or an audio file.
 
-   ```bash
-   pip install numpy onnxruntime sounddevice
-   ```
-
-   Then run this script to listen to your microphone and detect your wake word:
-
-   ```python
-   import json
-   import time
-
-   import numpy as np
-   import onnxruntime as ort
-   import sounddevice as sd
-
-   MODEL_PATH = "model_v1.onnx"
-
-   session = ort.InferenceSession(MODEL_PATH, providers=["CPUExecutionProvider"])
-   info = json.loads(session.get_modelmeta().custom_metadata_map["wakeforge"])
-   input_name = session.get_inputs()[0].name
-
-   sample_rate = info["input"]["sample_rate"]
-   window = info["window_samples"]
-
-   threshold = info["threshold"]  # Auto = 0.5, you can adjust this value to make the detection more or less sensitive
-   # Example thresholds:
-   # threshold = 0.7  # Less sensitive
-   # threshold = 0.4  # More sensitive
-
-   step = int(0.1 * sample_rate)
-
-   buffer = np.zeros(window, dtype=np.float32)
-   ready, last_hit = True, 0.0
-
-   print("Listening... press Ctrl+C to stop.")
-   try:
-       with sd.InputStream(samplerate=sample_rate, channels=1, dtype="float32", blocksize=step) as mic:
-           while True:
-               chunk, _ = mic.read(step)
-               buffer = np.concatenate([buffer[step:], chunk[:, 0]])
-               score = float(session.run(None, {input_name: buffer[None, :]})[0][0])
-
-               if not ready and score < threshold / 2 and time.time() - last_hit > window / sample_rate:
-                   ready = True
-               if ready and score >= threshold:
-                   ready, last_hit = False, time.time()
-                   print(f"Wake word detected! (score {score:.2f})")
-   except KeyboardInterrupt:
-       print("Stopped.")
-   ```
-
-That's it: your wake word, your language, running locally.
+That’s it! Your wake word, in your language, running entirely locally.
 
 ## Model size & performance
 
