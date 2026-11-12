@@ -44,11 +44,14 @@ def _render(steps, series, best_step, width, height):
     """series: [(valores, estilo)] -> Text con el gráfico completo."""
     cols, rows = width * 2, height * 4
     all_y = [v for values, _ in series for v in values]
-    ymin, ymax = min(all_y), max(all_y)
+    data_min = min(all_y)  # mínimo real de los datos, antes de añadir márgenes
+    ymin, ymax = data_min, max(all_y)
     if ymax - ymin < 1e-9:
         ymax, ymin = ymax + 0.5, ymin - 0.5
     pad = (ymax - ymin) * 0.05
     ymin, ymax = ymin - pad, ymax + pad
+    if data_min >= 0:  # una loss no puede ser negativa: el margen no debe bajar de cero
+        ymin = max(ymin, 0.0)
     xmin, xmax = steps[0], steps[-1]
 
     def px(x):
