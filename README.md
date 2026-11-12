@@ -40,6 +40,8 @@ Local · Lightweight
 * **Yours from start to finish** — local training, local inference, no cloud required.
 * **One model, everywhere** — export to ONNX and run lightweight inference on CPU.
 
+![cli](static/waketorchcli2.png)
+
 ## How does WakeTorch compare?
 
 WakeTorch is not trying to replace every wake word tool. It focuses on one thing: getting **your** wake word, in **your** language, trained on **your** computer with the least friction.
