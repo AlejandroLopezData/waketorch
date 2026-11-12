@@ -40,7 +40,30 @@ Local · Lightweight
 * **Yours from start to finish** — local training, local inference, no cloud required.
 * **One model, everywhere** — export to ONNX and run lightweight inference on CPU.
 
-![cli](static/waketorchcli2.png)
+## How does WakeTorch compare?
+
+WakeTorch is not trying to replace every wake word tool. It focuses on one thing: getting **your** wake word, in **your** language, trained on **your** computer with the least friction.
+
+| | **WakeTorch** | openWakeWord | microWakeWord | Picovoice Porcupine |
+|---|---|---|---|---|
+| **How you train** | Guided CLI, step by step | Python pipeline or Colab notebook | Python / TensorFlow pipeline | Web console |
+| **Data you provide** | Your own voice: 30–50 clips (record or upload) | None: synthetic speech from a text-to-speech model | None: synthetic speech from a text-to-speech model | None: you type the phrase |
+| **Where training runs** | Your computer, no account | Colab or your own machine | Colab or your own machine | Picovoice's servers, account required |
+| **Setup effort** | One installer, then `waketorch` | Notebook or repo, dependencies, config to edit | Aimed at advanced users | Sign up and type a phrase |
+| **Time to a first model** | Minutes | Roughly 1–2.5 hours on Colab | ~20 minutes on a free Colab GPU | Seconds |
+| **Languages** | Any, because it learns from your voice | Those supported by the TTS voices | Those supported by the TTS voices | 17 supported languages |
+| **What you get** | `.onnx` + a ready-to-run Python example | `.onnx` / `.tflite` | Tiny `.tflite` + JSON manifest | Platform-specific model file |
+| **Cost / license** | Free, Apache-2.0 | Open source | Open source | Free tier ended June 30, 2026 |
+| **Best for** | A personal wake word, fast, on desktop, Raspberry Pi or your own app | Home Assistant and generic phrases | ESP32 and microcontrollers | Commercial products with vendor support |
+
+**What makes WakeTorch different**
+
+* **Your voice, not a synthetic one.** The model learns from real recordings of you, in your accent and your language.
+* **Everything in one place.** Record, train, check the curve, test with your microphone and export, all inside the same CLI.
+* **Local from start to finish.** No cloud, no account, no notebook to babysit.
+* **Straight to code.** The CLI gives you a ready-to-run example for your `.onnx` file.
+
+*Comparison based on public documentation, last checked November 2026. These tools change often, so check each project for current details.*
 
 ## Installation
 
