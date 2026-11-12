@@ -35,16 +35,17 @@ Local · Lightweight
 
 > **You shouldn't have to rack your brain to train a wake word.**
 
-Record your voice, press train, get a small ONNX model that runs on CPU. Local, in minutes, in any language.
+Tired of notebooks, English-only voices and cloud accounts? Record your voice, press train, get a small ONNX model that runs on CPU.
 
-| | **WakeTorch** | openWakeWord / microWakeWord | Picovoice Porcupine |
+| The usual problem | openWakeWord / microWakeWord | Picovoice Porcupine | **WakeTorch** |
 |---|---|---|---|
-| **Training** | **Guided CLI** | Notebooks and scripts | Cloud console |
-| **Whose voice** | **Yours** | Synthetic (text-to-speech) | Typed phrase |
-| **Languages** | **Any** | English-first | 17 supported |
-| **Runs on** | **Your computer, no account** | Colab or your own setup | Their servers, account required |
+| **Setup** | Colab notebooks, dependencies, config to edit | Account and access key | **Install once, run `waketorch`** |
+| **Your language** | English text-to-speech by default; other languages mean changing the pipeline yourself | 17 supported languages | **Just speak it, any language** |
+| **Your voice** | Synthetic voices | Typed phrase | **Trained on real recordings of you** |
+| **Time to a model** | 1–2+ hours on Colab, setup included | Seconds, but in their cloud | **Minutes, on your computer** |
+| **Control** | Colab sessions and limits | Their servers, free tier ended in 2026 | **Local, no account, no cloud** |
 
-*Based on public documentation, last checked November 2026.*
+*Based on public documentation and hands-on experience, last checked November 2026.*
 
 ![cli](static/waketorchcli2.png)
 
