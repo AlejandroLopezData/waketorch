@@ -35,25 +35,18 @@ Local · Lightweight
 
 > **You shouldn't have to rack your brain to train a wake word.**
 
-* **Any language** — train the wake word you actually want, in the language you actually speak.
-* **Minutes, not hours** — the guided CLI takes you from recordings to a working model in minutes.
-* **Yours from start to finish** — local training, local inference, no cloud required.
-* **One model, everywhere** — export to ONNX and run lightweight inference on CPU.
-
-![cli](static/waketorchcli2.png)
-
-## Why WakeTorch?
-
-WakeTorch was built for one thing: making a custom wake word **simple**. No notebooks, no cloud, no machine learning knowledge. Record your voice, press train, get your model.
+Record your voice, press train, get a small ONNX model that runs on CPU. Local, in minutes, in any language.
 
 | | **WakeTorch** | openWakeWord / microWakeWord | Picovoice Porcupine |
 |---|---|---|---|
-| **How you train** | Guided CLI | Notebooks and scripts | Cloud console |
+| **Training** | **Guided CLI** | Notebooks and scripts | Cloud console |
 | **Whose voice** | **Yours** | Synthetic (text-to-speech) | Typed phrase |
-| **Languages** | **Any** | Those the TTS voices support | 17 supported |
-| **Where it runs** | **Your computer, no account** | Colab or your own setup | Their servers, account required |
+| **Languages** | **Any** | English-first | 17 supported |
+| **Runs on** | **Your computer, no account** | Colab or your own setup | Their servers, account required |
 
 *Based on public documentation, last checked November 2026.*
+
+![cli](static/waketorchcli2.png)
 
 ## Installation
 
