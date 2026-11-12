@@ -161,7 +161,7 @@ When training finishes, you can:
 
    ![test_mic](static/test_mic.png)
 
-3. **Export your .onnx file.** Select *5. How to use my model* to get a ready-to-use code example. You can also copy the appropriate example from [detect_from_mic](examples/detect_from_mic) or [detect_from_file](examples/detect_from_file), depending on whether you want to detect your wake word through a microphone or an audio file.
+3. **Export your .onnx file.** Select *5. How to use my model* to get a ready-to-use code example. You can also copy the appropriate example from [detect_from_mic](examples/detect_from_mic.py) or [detect_from_file](examples/detect_from_file.py), depending on whether you want to detect your wake word through a microphone or an audio file.
 
 That’s it! Your wake word, in your language, running entirely locally.
 
